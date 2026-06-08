@@ -5,7 +5,7 @@
 # * Author     : 苏木
 # * Date       : 2026/04/12
 # * Version    : 1.0.0
-# * Description: 安装 skills 到各 AI 扩展 (RooCode / Claude Code / CodeBuddy)
+# * Description: 安装 skills 到各 AI 扩展 (RooCode / Claude Code / CodeBuddy / OpenCode)
 # * ======================================================
 ##
 # 脚本和工程路径
@@ -77,9 +77,11 @@ SKILLS_SRC_DIR="${SCRIPT_ABSOLUTE_PATH}/skills"
 # RooCode    : ~/.roo/skills/<skill-name>/SKILL.md
 # Claude Code: ~/.claude/skills/<skill-name>/SKILL.md
 # CodeBuddy  : ~/.codebuddy/skills/<skill-name>/SKILL.md
+# OpenCode   : ~/.config/opencode/skills/<skill-name>/SKILL.md
 ROOCODE_SKILLS_DIR="${HOME}/.roo/skills"
 CLAUDE_SKILLS_DIR="${HOME}/.claude/skills"
 CODEBUDDY_SKILLS_DIR="${HOME}/.codebuddy/skills"
+OPENCODE_SKILLS_DIR="${HOME}/.config/opencode/skills"
 
 # ========================================================
 # 获取所有技能目录名称列表 (仅返回子目录, 排除 skills/SKILL.md 等文件)
@@ -210,6 +212,45 @@ install_to_codebuddy() {
 }
 
 # ========================================================
+# 安装技能到 OpenCode
+# 目标: ~/.config/opencode/skills/<skill-name>/  (复制整个技能目录)
+install_to_opencode() {
+    step "installing skills to OpenCode (${OPENCODE_SKILLS_DIR})..."
+
+    # 检查源目录
+    if [ ! -d "${SKILLS_SRC_DIR}" ]; then
+        error "skills source directory not found: ${SKILLS_SRC_DIR}"
+        return 1
+    fi
+
+    # 创建目标目录
+    mkdir -p "${OPENCODE_SKILLS_DIR}"
+
+    local skill_names=$(get_skill_names)
+    local count=0
+
+    for skill_name in ${skill_names}; do
+        local src="${SKILLS_SRC_DIR}/${skill_name}"
+        local dst="${OPENCODE_SKILLS_DIR}/${skill_name}"
+
+        # 跳过非目录项
+        [ ! -d "${src}" ] && continue
+
+        # 目标已存在则先移除
+        if [ -d "${dst}" ]; then
+            rm -rf "${dst}"
+            info " overwrite existing skill: ${skill_name}"
+        fi
+
+        cp -rf "${src}" "${dst}"
+        count=$((count + 1))
+        dim "  ${src}/ -> ${dst}/"
+    done
+
+    success "OpenCode: ${count} skill(s) installed."
+}
+
+# ========================================================
 # 安装到所有 AI 扩展
 install_to_all() {
     install_to_roocode  || return 1
@@ -217,6 +258,8 @@ install_to_all() {
     install_to_claude   || return 1
     echo ""
     install_to_codebuddy || return 1
+    echo ""
+    install_to_opencode || return 1
 }
 
 # ========================================================
@@ -247,6 +290,15 @@ do_uninstall() {
     # CodeBuddy
     for skill_name in ${skill_names}; do
         local dst="${CODEBUDDY_SKILLS_DIR}/${skill_name}"
+        if [ -d "${dst}" ]; then
+            rm -rf "${dst}"
+            info " removed ${dst}"
+        fi
+    done
+
+    # OpenCode
+    for skill_name in ${skill_names}; do
+        local dst="${OPENCODE_SKILLS_DIR}/${skill_name}"
         if [ -d "${dst}" ]; then
             rm -rf "${dst}"
             info " removed ${dst}"
@@ -302,6 +354,17 @@ show_status() {
             error "${skill_name} (not installed)"
         fi
     done
+    echo ""
+
+    # OpenCode 状态
+    step "OpenCode (${OPENCODE_SKILLS_DIR}):"
+    for skill_name in ${skill_names}; do
+        if [ -d "${OPENCODE_SKILLS_DIR}/${skill_name}" ]; then
+            success "${skill_name}"
+        else
+            error "${skill_name} (not installed)"
+        fi
+    done
 }
 
 # ========================================================
@@ -314,6 +377,7 @@ do_echo_menu() {
     echo -e "ROOCODE_SKILLS_DIR  :${ROOCODE_SKILLS_DIR}"
     echo -e "CLAUDE_SKILLS_DIR   :${CLAUDE_SKILLS_DIR}"
     echo -e "CODEBUDDY_SKILLS_DIR:${CODEBUDDY_SKILLS_DIR}"
+    echo -e "OPENCODE_SKILLS_DIR :${OPENCODE_SKILLS_DIR}"
     echo -e "SCRIPT_ABSOLUTE_PATH:${SCRIPT_ABSOLUTE_PATH}"
     echo -e "SHELL_PARAM         :($# total)arg=$*"
     echo ""
@@ -330,6 +394,7 @@ usage() {
     echo "  roocode     安装到 RooCode    (~/.roo/skills/)"
     echo "  claude      安装到 Claude Code (~/.claude/skills/)"
     echo "  codebuddy   安装到 CodeBuddy  (~/.codebuddy/skills/)"
+    echo "  opencode    安装到 OpenCode   (~/.config/opencode/skills/)"
     echo "  status      显示安装状态"
     echo "  uninstall   卸载所有已安装的技能"
     echo "  help        显示此帮助信息"
@@ -347,19 +412,21 @@ interactive_menu() {
     echo "  2) 安装到 RooCode"
     echo "  3) 安装到 Claude Code"
     echo "  4) 安装到 CodeBuddy"
-    echo "  5) 显示安装状态"
-    echo "  6) 卸载所有技能"
+    echo "  5) 安装到 OpenCode"
+    echo "  6) 显示安装状态"
+    echo "  7) 卸载所有技能"
     echo "  0) 退出"
     echo ""
-    read -p "请输入选项 [0-6]: " choice
+    read -p "请输入选项 [0-7]: " choice
 
     case ${choice} in
         1) install_to_all ;;
         2) install_to_roocode ;;
         3) install_to_claude ;;
         4) install_to_codebuddy ;;
-        5) show_status ;;
-        6) do_uninstall ;;
+        5) install_to_opencode ;;
+        6) show_status ;;
+        7) do_uninstall ;;
         0) echo "退出"; exit 0 ;;
         *) error "无效选项: ${choice}"; exit 1 ;;
     esac
@@ -374,6 +441,7 @@ case "$1" in
     roocode)     install_to_roocode ;;
     claude)      install_to_claude ;;
     codebuddy)   install_to_codebuddy ;;
+    opencode)    install_to_opencode ;;
     status)      show_status ;;
     uninstall)   do_uninstall ;;
     help|--help|-h) usage ;;
