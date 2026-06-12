@@ -1,6 +1,20 @@
 # 苏木的 AI skills
 
-## 一、Windows
+## Skills 索引
+
+skills目录包含技能集合，每个子目录为一个独立技能。
+
+| 技能 | 说明 |
+|:------|:------|
+| [c-lang-spec](./skills/c-lang-spec/SKILL.md) | C 语言编程规范的代码检查与格式化指导 |
+| [makefile-spec](./skills/makefile-spec/SKILL.md) | Makefile 编写规范的代码检查、格式化与编写指导 |
+| [markdowncli](./skills/markdowncli/SKILL.md) | 按指定规范创建或者修改 markdown 文件 |
+| [ts-lang-spec](./skills/ts-lang-spec/SKILL.md) | TypeScript 语言编程规范的代码检查与格式化指导 |
+
+
+## 二、安装skills
+
+### 1. Windows
 
 使用 `install.ps1` 管理 skills 的安装、删除和列表：
 
@@ -23,7 +37,7 @@
 
 > **注意**：`install.ps1` 含中文注释，PowerShell 5.1 需要 UTF-8 BOM 才能正确解析。如果脚本被其他编辑器重新保存，请确保保留 UTF-8 BOM 编码（文件开头 3 字节 `EF BB BF`）。
 
-## 二、Linux / macOS
+### 2. Linux / macOS
 
 使用 `install.sh` 管理 skills 的安装、卸载和状态查看：
 
@@ -51,7 +65,7 @@
 ./install.sh help                      # 显示帮助信息
 ```
 
-## 三、 使用 npx skills add 安装
+### 3. 使用 npx skills add 安装
 
 通过 [skills CLI](https://github.com/vercel-labs/skills) 可一键将本仓库的技能安装到 OpenCode、Claude Code 等 AI 编程工具：
 
